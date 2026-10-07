@@ -1,31 +1,141 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clasament medii</title>
-  <style>
-    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 16px; }
-    input, button { padding: 8px; margin: 4px 0; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clasament medii</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --text: #1d2a24; --muted: #66736b;
+    --line: #dfe4de; --accent: #1f6f4a; --accent-text: #ffffff; --err: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141a17; --card: #1c2420; --text: #e8eee9; --muted: #93a39a;
+      --line: #2c3731; --accent: #5fc291; --accent-text: #0f1a14; --err: #f2867f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: Georgia, "Times New Roman", serif; line-height: 1.5; }
+  main { max-width: 560px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-family: system-ui, sans-serif; font-size: .95rem; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; background: var(--card);
+         border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  input { font: 1rem system-ui, sans-serif; padding: 10px; border: 1px solid var(--line);
+          border-radius: 6px; background: var(--bg); color: var(--text); }
+  #nume { flex: 2 1 160px; }
+  #medie { flex: 1 1 90px; }
+  button { font: 600 1rem system-ui, sans-serif; padding: 10px 18px; border: 0; border-radius: 6px;
+           background: var(--accent); color: var(--accent-text); cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  input:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #mesaj { min-height: 1.5em; margin: 8px 0 0; font: .9rem system-ui, sans-serif; color: var(--err); }
+  .wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card);
+          border: 1px solid var(--line); border-radius: 10px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { font: 600 .85rem system-ui, sans-serif; color: var(--muted); }
+  td.loc { width: 56px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  td.medie { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  th:last-child { text-align: right; }
+  tr:first-child td.loc { color: var(--accent); font-weight: 700; }
+</style>
 </head>
 <body>
+<main>
   <h1>Clasament medii</h1>
+  <p class="sub">Scrie un pseudonim și media ta. Lista se ordonează automat, de la cea mai mare medie.</p>
 
-  <input id="nume" placeholder="Nume sau pseudonim"><br>
-  <input id="medie" type="number" step="0.01" min="1" max="10" placeholder="Media (1-10)"><br>
-  <button id="adauga">Adaugă</button>
+  <form id="formular">
+    <input id="nume" placeholder="Nume sau pseudonim" maxlength="29" required>
+    <input id="medie" type="number" step="0.01" min="1" max="10" placeholder="Media" required>
+    <button id="adauga" type="submit">Adaugă</button>
+  </form>
+  <p id="mesaj" role="alert"></p>
 
-  <table>
-    <thead><tr><th>Loc</th><th>Nume</th><th>Medie</th></tr></thead>
-    <tbody id="clasament"></tbody>
-  </table>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Loc</th><th>Nume</th><th>Medie</th></tr></thead>
+      <tbody id="clasament"><tr><td colspan="3">Se încarcă...</td></tr></tbody>
+    </table>
+  </div>
+</main>
 
-  <script type="module">
-    // Aici vine codul Firebase (conectarea la baza de date)
-    // și funcțiile care adaugă și afișează profilele.
-  </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ============================================================
+  // LIPEȘTE AICI firebaseConfig-ul tău din consola Firebase
+  // (înlocuiește tot obiectul de mai jos, de la { până la })
+  // ============================================================
+ {
+  apiKey: "AIzaSyC4I4MotowQpCwx3OPCVa5In2vRus3rSjM",
+  authDomain: "clasament-7ab6f.firebaseapp.com",
+  projectId: "clasament-7ab6f",
+  storageBucket: "clasament-7ab6f.firebasestorage.app",
+  messagingSenderId: "89135353755",
+  appId: "1:89135353755:web:cb7a7387c5f13e684f9b3e"
+};
+  // ============================================================
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const profile = collection(db, "profile");
+
+  const tabel = document.getElementById("clasament");
+  const mesaj = document.getElementById("mesaj");
+  const buton = document.getElementById("adauga");
+
+  async function incarca() {
+    try {
+      const q = query(profile, orderBy("medie", "desc"));
+      const rezultate = await getDocs(q);
+      tabel.innerHTML = "";
+      if (rezultate.empty) {
+        tabel.innerHTML = '<tr><td colspan="3">Nu e nimeni în clasament încă. Fii primul.</td></tr>';
+        return;
+      }
+      let loc = 1;
+      rezultate.forEach(d => {
+        const { nume, medie } = d.data();
+        const rand = document.createElement("tr");
+        const c1 = document.createElement("td"); c1.className = "loc"; c1.textContent = loc++;
+        const c2 = document.createElement("td"); c2.textContent = nume;
+        const c3 = document.createElement("td"); c3.className = "medie"; c3.textContent = Number(medie).toFixed(2);
+        rand.append(c1, c2, c3);
+        tabel.appendChild(rand);
+      });
+    } catch (e) {
+      console.error(e);
+      tabel.innerHTML = '<tr><td colspan="3">Nu s-a putut citi clasamentul. Verifică configurarea Firebase.</td></tr>';
+    }
+  }
+
+  document.getElementById("formular").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    mesaj.textContent = "";
+    const nume = document.getElementById("nume").value.trim();
+    const medie = parseFloat(document.getElementById("medie").value);
+    if (!nume || nume.length > 29) { mesaj.textContent = "Numele trebuie să aibă între 1 și 29 de caractere."; return; }
+    if (isNaN(medie) || medie < 1 || medie > 10) { mesaj.textContent = "Media trebuie să fie între 1 și 10."; return; }
+
+    buton.disabled = true;
+    try {
+      await addDoc(profile, { nume, medie, creat: serverTimestamp() });
+      ev.target.reset();
+      await incarca();
+    } catch (e) {
+      console.error(e);
+      mesaj.textContent = "Nu s-a putut salva. Verifică regulile Firestore și configurarea.";
+    }
+    buton.disabled = false;
+  });
+
+  incarca();
+</script>
 </body>
 </html>

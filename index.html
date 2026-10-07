@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clasament medii</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 16px; }
+    input, button { padding: 8px; margin: 4px 0; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Clasament medii</h1>
+
+  <input id="nume" placeholder="Nume sau pseudonim"><br>
+  <input id="medie" type="number" step="0.01" min="1" max="10" placeholder="Media (1-10)"><br>
+  <button id="adauga">Adaugă</button>
+
+  <table>
+    <thead><tr><th>Loc</th><th>Nume</th><th>Medie</th></tr></thead>
+    <tbody id="clasament"></tbody>
+  </table>
+
+  <script type="module">
+    // Aici vine codul Firebase (conectarea la baza de date)
+    // și funcțiile care adaugă și afișează profilele.
+  </script>
+</body>
+</html>
